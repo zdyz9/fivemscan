@@ -1,0 +1,29 @@
+{
+  "name": "fivemscan",
+  "version": "1.0.0",
+  "description": "This project is a FiveM Scanner designed to monitor and analyze server activity in real-time. It provides insights into server performance, player activity, and other key metrics.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zdyz9/fivemscan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/zdyz9/fivemscan/issues"
+  },
+  "homepage": "https://github.com/zdyz9/fivemscan#readme",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "crypto": "^1.0.1",
+    "file-type": "^20.5.0",
+    "fs": "^0.0.1-security",
+    "os": "^0.1.2",
+    "path": "^0.12.7"
+  }
+}

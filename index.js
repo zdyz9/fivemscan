@@ -2,14 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const chalk = require('chalk');
 const fileType = require('file-type');
 
 // patterns to detect cheats and suspicious files
-// These patterns are examples and should be adjusted based on actual cheat signatures
-// and file names. The patterns should be updated regularly to keep up with new cheats.
-// The patterns are case-insensitive and can include partial matches.
-// The detection rules are based on common cheat signatures and file names.
 const suspiciousPatterns = [
     'HxCheats', 'RedENGINE', 'lynx', 'TiagoMenu', 'FalloutMenu', 'Eulen', 'Executor', 'CheatEngine',
     'dabinjector', 'modz', 'aimbot', 'triggerbot', 'wallhack', 'esp', 'silentaim', 'fov', 'noclip',
@@ -30,9 +25,6 @@ const suspiciousPatterns = [
 ];
 
 // detection rules for various cheats and malicious files
-// The detection rules are based on common cheat signatures and file names.
-// The rules are case-insensitive and can include partial matches.
-// The rules should be updated regularly to keep up with new cheats.
 const detectionRules = [
     { name: "Skript Loader", patterns: ["D3D11CreateDeviceAndSwapChain", "AcquireSRWLockExclusive", "CreateFileW"] },
     { name: "TZX Loader", patterns: ["taskhostw.exe", "TZX.exe", "requestedExecutionLevel level='requireAdministrator'"] },
@@ -52,21 +44,59 @@ const detectionRules = [
     { name: "Evading Loader", patterns: ["@.mxrcy0", "h.mxrcy1", "GetModuleHandleA", "USER32.dll", "Normaliz.dll"] },
     { name: "Generic Cheat Hook", patterns: ["GetUserObjectInformationW", "CertFindCertificateInStore", "SHGetIconOverlayIndexA"] },
     { name: "DLL Injection", patterns: [".dll", "LoadLibrary", "GetProcAddress"] },
-    { name: "Malicious File Type", patterns: ["application/x-dosexec", "application/x-msdownload"] }
+    { name: "Malicious File Type", patterns: ["application/x-dosexec", "application/x-msdownload"] },
+    { name: "Keylogger Detection", patterns: ["GetAsyncKeyState", "SetWindowsHookEx", "WH_KEYBOARD_LL"] },
+    { name: "Remote Access Tool", patterns: ["TeamViewer", "AnyDesk", "RAT", "VNC", "RemoteDesktop"] },
+    { name: "Packet Sniffer", patterns: ["WinPcap", "Npcap", "pcap_open_live", "pcap_loop"] },
+    { name: "Process Hider", patterns: ["NtQuerySystemInformation", "ZwQuerySystemInformation", "HideProcess"] },
+    { name: "Memory Editor", patterns: ["ReadProcessMemory", "WriteProcessMemory", "VirtualProtectEx"] },
+    { name: "Kernel Exploit", patterns: ["NtLoadDriver", "ZwLoadDriver", "PsSetLoadImageNotifyRoutine"] },
+    { name: "DirectX Hook", patterns: ["Direct3DCreate9", "D3D11CreateDevice", "IDXGISwapChain::Present"] },
+    { name: "OpenGL Hook", patterns: ["wglSwapBuffers", "glDrawElements", "glDrawArrays"] },
+    { name: "Vulkan Hook", patterns: ["vkCreateInstance", "vkCreateDevice", "vkQueuePresentKHR"] },
+    { name: "Game Overlay", patterns: ["CreateDXGIFactory", "CreateDXGIFactory1", "CreateDXGIFactory2"] },
+    { name: "Cheat Loader", patterns: ["LoadLibraryA", "LoadLibraryW", "GetProcAddress"] },
+    { name: "Anti-Cheat Bypass", patterns: ["NtQueryInformationProcess", "ZwQueryInformationProcess", "ObRegisterCallbacks"] },
+    { name: "DLL Injection", patterns: ["CreateRemoteThread", "VirtualAllocEx", "WriteProcessMemory"] },
+    { name: "Code Injection", patterns: ["SetThreadContext", "QueueUserAPC", "NtQueueApcThread"] },
+    { name: "Shellcode Execution", patterns: ["VirtualAlloc", "CreateThread", "NtCreateThreadEx"] },
+    { name: "Process Hollowing", patterns: ["NtUnmapViewOfSection", "ZwUnmapViewOfSection", "ResumeThread"] },
+    { name: "Speedhack Detection", patterns: ["QueryPerformanceCounter", "timeGetTime", "GetTickCount"] },
+    { name: "Silent Aim", patterns: ["silent_aim", "aim_smoothness", "aim_fov"] },
+    { name: "Triggerbot Detection", patterns: ["triggerbot_enabled", "auto_shoot", "trigger_key"] },
+    { name: "ESP Overlay", patterns: ["ESP", "entity_highlight", "player_box"] },
+    { name: "Radar Hack", patterns: ["radar_enabled", "enemy_positions", "map_overlay"] },
+    { name: "Teleport Hack", patterns: ["teleport_to", "player_coordinates", "set_position"] },
+    { name: "Infinite Ammo", patterns: ["ammo_count", "no_reload", "unlimited_ammo"] },
+    { name: "God Mode", patterns: ["invincibility", "no_damage", "infinite_health"] },
+    { name: "Auto Loot", patterns: ["auto_pickup", "loot_radius", "item_grabber"] },
+    { name: "Auto Heal", patterns: ["auto_heal", "health_regen", "instant_heal"] },
+    { name: "Auto Farm", patterns: ["auto_farm", "resource_gathering", "auto_collect"] },
+    { name: "Key Auth Loader", patterns: ["keyauth", "license_key", "auth_token"] },
+    { name: "Cheat Config", patterns: ["config.json", "settings.ini", "cheat_config"] },
+    { name: "Cheat Log", patterns: ["log.txt", "cheat_log", "debug_log"] },
+    { name: "Cheat Cache", patterns: ["cache.dat", "temp_files", "cheat_cache"] },
+    { name: "Cheat Backup", patterns: ["backup.zip", "cheat_backup", "config_backup"] },
+    { name: "Cheat Framework", patterns: ["framework.dll", "cheat_framework", "hack_framework"] },
+    { name: "Cheat Engine", patterns: ["Cheat Engine", "cheatengine-x86_64.exe", "cheatengine-i386.exe"] },
+    { name: "Malware Loader", patterns: ["malware_loader", "payload.exe", "dropper"] },
+    { name: "Backdoor Detection", patterns: ["reverse_shell", "bind_shell", "backdoor"] },
+    { name: "Trojan Detection", patterns: ["trojan.exe", "malicious_payload", "remote_access"] },
+    { name: "Exploit Detection", patterns: ["exploit.dll", "vulnerability", "privilege_escalation"] },
+    { name: "Keylogger Detection", patterns: ["keylogger", "keystroke_logging", "keyboard_hook"] },
+    { name: "Remote Access Tool", patterns: ["RAT", "remote_access", "teamviewer"] },
+    { name: "Packet Sniffer", patterns: ["pcap", "packet_capture", "network_sniffer"] }
 ];
 
 // directories to scan for cheats and suspicious files
-// The directories are common locations where cheats and malicious files may be found.
-// The directories should be updated regularly to include new locations.
-// The directories are case-insensitive and can include partial matches.
 const scanDirs = [
     path.join(os.homedir(), 'AppData', 'Roaming'),
     path.join(os.homedir(), 'AppData', 'Local'),
     path.join(os.homedir(), 'Documents'),
     path.join(os.homedir(), 'Downloads'),
     path.join(os.homedir(), 'Desktop'),
-    'C:\\Program Files\\FiveM',
-    'C:\\Program Files (x86)\\FiveM'
+    path.join('C:', 'Program Files', 'FiveM'),
+    path.join('C:', 'Program Files (x86)', 'FiveM')
 ];
 
 let detectionSummary = [];
@@ -110,7 +140,7 @@ function scanFile(filePath) {
             });
         }
     } catch (error) {
-        console.log(chalk.red(`[Error] Failed to scan file: ${filePath}. Error: ${error.message}`));
+        console.log(`[Error] Failed to scan file: ${filePath}. Error: ${error.message}`);
     }
 }
 
@@ -137,42 +167,42 @@ function scanDirectory(dir) {
             }
         }
     } catch (error) {
-        console.log(chalk.red(`[Error] Failed to scan directory: ${dir}. Error: ${error.message}`));
+        console.log(`[Error] Failed to scan directory: ${dir}. Error: ${error.message}`);
     }
 }
 
 function performSystemChecks() {
-    console.log(chalk.bold.blue('=== Performing System Checks ==='));
-    console.log(chalk.cyan(`Operating System: ${os.type()} ${os.release()}`));
-    console.log(chalk.cyan(`CPU: ${os.cpus()[0].model}`));
-    console.log(chalk.cyan(`Total Memory: ${(os.totalmem() / 1024 / 1024).toFixed(2)} MB`));
-    console.log(chalk.cyan(`Free Memory: ${(os.freemem() / 1024 / 1024).toFixed(2)} MB`));
-    console.log(chalk.cyan(`User: ${os.userInfo().username}`));
-    console.log(chalk.bold.blue('=== System Checks Complete ==='));
+    console.log('=== Performing System Checks ===');
+    console.log(`Operating System: ${os.type()} ${os.release()}`);
+    console.log(`CPU: ${os.cpus()[0].model}`);
+    console.log(`Total Memory: ${(os.totalmem() / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Free Memory: ${(os.freemem() / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`User: ${os.userInfo().username}`);
+    console.log('=== System Checks Complete ===');
 }
 
 function displayDashboard() {
     console.clear();
-    console.log(chalk.bold.blue('=== FiveM Cheat Scanner Dashboard ==='));
+    console.log('=== FiveM Cheat Scanner Dashboard ===');
     if (detectionSummary.length === 0) {
-        console.log(chalk.green('No cheats or malicious files detected.'));
+        console.log('No cheats or malicious files detected.');
     } else {
-        console.log(chalk.red(`Detections Found: ${detectionSummary.length}`));
+        console.log(`Detections Found: ${detectionSummary.length}`);
         detectionSummary.forEach((detection, index) => {
-            console.log(chalk.yellow(`[${index + 1}] Type: ${detection.type}`));
-            console.log(chalk.cyan(`    Rule: ${detection.rule}`));
-            console.log(chalk.magenta(`    File: ${detection.file}`));
+            console.log(`[${index + 1}] Type: ${detection.type}`);
+            console.log(`    Rule: ${detection.rule}`);
+            console.log(`    File: ${detection.file}`);
             if (detection.hash) {
-                console.log(chalk.gray(`    Hash: ${detection.hash}`));
+                console.log(`    Hash: ${detection.hash}`);
             }
         });
     }
-    console.log(chalk.bold.blue('=== Scan Complete ==='));
+    console.log('=== Scan Complete ===');
 }
 
 function startScan() {
     console.clear();
-    console.log(chalk.bold.blue('=== Starting FiveM Cheat Scanner ==='));
+    console.log('=== Starting FiveM Cheat Scanner ===');
     performSystemChecks();
     scanDirs.forEach(scanDirectory);
     displayDashboard();
